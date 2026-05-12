@@ -1,0 +1,59 @@
+# Helix system manifest: hello-system.
+# Tiny demo spoke. Implements /healthz and /invoke/echo. No AI, no mail, no
+# customer-scoped data. Used by smoke-test.sh and as a reference for new
+# system authors.
+
+id: hello-system
+display_name: Hello System
+description: Reference spoke. Echoes back the request body.
+
+# Capability tier (per node_architecture). hello-system is Tier 1 — read-only,
+# no side effects beyond logging.
+tier: 1
+
+classification:
+  ceiling: restricted
+  default_input: restricted
+  default_output: restricted
+
+# Empty for hello-system. Real systems list every model they may dispatch.
+ai_models: []
+
+# Other Helix systems this system may invoke (via the Gateway).
+invokes: []
+
+# Other Helix systems this system may read knowledge/data from.
+consumes_from: []
+
+# customer_confidential block is omitted — hello-system never sees customer data.
+
+mail:
+  inbox: ""
+  may_send: false
+  may_receive: false
+
+data:
+  schemas: [hello_system]       # Postgres schema; created at register-time.
+  buckets: [helix-hello-system] # MinIO bucket; created at register-time.
+  isolation: shared
+
+deploy:
+  # Compose service name + port. The Gateway proxies /invoke/hello-system/*
+  # to this URL. In Hetzner, swap to the spoke's private IP/hostname.
+  upstream_url: http://hello-system:8080
+  hostnames:
+    - hello-system.helix.localhost
+  resources:
+    cpu: 0.5
+    memory_mb: 256
+
+# Capability declarations, mirroring the GCP build's manifest schema.
+policies:
+  audit_log_required: true
+
+quality_targets:
+  p50_ms: 50
+  p99_ms: 200
+
+feedback:
+  channel: ""

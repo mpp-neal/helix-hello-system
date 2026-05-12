@@ -1,0 +1,67 @@
+# helix.yaml — the contract for being a Helix system, lives at the
+# root of every spoke repository. The Console "Add system" wizard
+# clones the repo, validates this manifest, then builds the Dockerfile
+# alongside it. Update services/deploy-controller/internal/manifest
+# when this schema changes.
+
+id: hello-system
+display_name: Hello System
+description: Reference spoke. Echoes back the request body and proves the platform contract.
+
+# Capability tier (1 read-only, 2 side-effects, 3 destructive side-effects).
+tier: 1
+
+# Classification ceiling. The Gateway refuses to route through a
+# target whose ceiling exceeds the caller's.
+classification:
+  ceiling: restricted
+  default_input: restricted
+  default_output: restricted
+
+# Optional. Models from configured providers (see /settings/ai) that
+# this system may dispatch to. The Gateway enforces this before
+# LiteLLM is called.
+ai_models: []
+
+# Optional. Other systems this one may call via the Gateway.
+invokes: []
+consumes_from: []
+
+# Optional. Mailbox provisioning. Empty disables.
+mail:
+  inbox: ""
+  may_send: false
+  may_receive: false
+
+# Container runtime. The deploy-controller uses these to build a
+# Compose fragment.
+runtime:
+  # Port the HTTP server listens on inside the container.
+  port: 8080
+  # Resources allocated by Compose / Nomad.
+  cpu: 0.5
+  memory_mb: 256
+  # Extra env vars to set, key/value. Secrets go through platform_secrets.
+  env: {}
+
+# Deploy: where the system answers from on the public internet.
+deploy:
+  hostnames:
+    - hello-system.${HELIX_BASE_DOMAIN}
+  # Optional. Per-system data isolation. Default is shared schema +
+  # bucket; deploy-controller provisions both at register-time.
+  data:
+    isolation: shared
+
+# Quality targets (alerted on by Prometheus once observability is wired).
+quality_targets:
+  p50_ms: 50
+  p99_ms: 200
+
+# Admin bootstrap. The Console hits POST /__helix/bootstrap with
+# {admin_email, admin_name, token} after the container is healthy.
+# Spokes return {login_url} so the operator can land directly in
+# their system's UI as its first admin.
+bootstrap:
+  enabled: true
+  endpoint: /__helix/bootstrap
